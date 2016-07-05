@@ -53,84 +53,120 @@
  * contact PARC at cipo@parc.com for more information or visit http://www.ccnx.org
  */
 
-#ifndef CCNS3SIM_CCNXSCHEMAV1_H
-#define CCNS3SIM_CCNXSCHEMAV1_H
+#ifndef CCNS3_CCNXMANIFEST_H
+#define CCNS3_CCNXMANIFEST_H
 
-#include <stdint.h>
+#include "ns3/buffer.h"
+#include "ns3/ccnx-message.h"
+#include "ns3/ccnx-time.h"
 
 namespace ns3 {
 namespace ccnx {
 
+typedef enum
+{
+  CCNxManifestPayloadType_Data,
+  CCNxManifestPayloadType_Key,
+  CCNxManifestPayloadType_Link,
+  CCNxManifestPayloadType_Manifest,
+} CCNxManifestPayloadType;
+
 /**
- * @ingroup ccnx-packet
+ * @ingroup ccnx-messages
  *
- * This class defines the TLV Type values for the V1 schema.
+ * Class representation of a ContentObject.  The payload is not actually serialized.  If you need
+ * to actually carry data bytes... not there yet.
  *
- * These values come from the ICNRG research group document irtf-icnrg-ccnx-messages-01.txt.
+ * The keyid is part of the Validation.
  */
-class CCNxSchemaV1
+class CCNxManifest : public CCNxMessage
 {
 public:
-  // hop-by-hop headers
-  static const uint16_t T_INT_LIFE = 0x0001;
-  static const uint16_t T_CACHE_TIME = 0x0002;
-  static const uint16_t T_MSG_HASH = 0x0003;
+  static TypeId GetTypeId (void);
 
-  // top-level TLVs
-  static const uint16_t T_INTEREST = 0x0001;
-  static const uint16_t T_OBJECT = 0x0002;
-  static const uint16_t T_VALALG = 0x0003;
-  static const uint16_t T_VALSIG = 0x0004;
-  static const uint16_t T_MANIFEST = 0x0006;
+  /**
+   * Create a Manifest.
+   *
+   * @param payload     The payload in the Manifest.
+   * @param payloadType The payloadType of the Manifest.
+   * @param expiryTime  The expire time is the time at which the payload expires.
+   *
+   * Example
+   * @code
+   * Ptr<CCNxManifest> contentObj = Create<CCNxInterest>(name, payload, 0,
+   *                                     (Ptr<CCNxTime>) 0);
+   * @endcode
+   */
+  CCNxManifest (Ptr<const CCNxName> name, Ptr<CCNxBuffer> payload, CCNxManifestPayloadType payloadType, Ptr<CCNxTime> expiryTime);
 
-  // Message body
-  static const uint16_t T_NAME = 0x0000;
-  static const uint16_t T_PAYLOAD = 0x0001;
-  static const uint16_t T_KEYID_REST = 0x0002;
-  static const uint16_t T_HASH_REST = 0x0003;
-  static const uint16_t T_PAYLDTYPE = 0x0005;
-  static const uint16_t T_EXPIRY = 0x0006;
-  static const uint16_t T_HASHGROUP = 0x0007;
-  static const uint16_t T_BLOCKHASHGROUP = 0x0008;
+  /**
+   * Create a Manifest without payloadType and expiryTime
+   */
+  CCNxManifest (Ptr<const CCNxName> name, Ptr<CCNxBuffer> payload);
 
-  // HashGroup body
-  static const uint16_t T_METADATA = 0x0000;
-  static const uint16_t T_SIZED_DATAPTR = 0x0001;
-  static const uint16_t T_SIZED_MANIFESTPTR = 0x0002;
+  /**
+   * Create a Manifest with name only.
+   */
+  CCNxManifest (Ptr<const CCNxName> name);
 
-  // BlockHashGroup body
-  static const uint16_t T_METADATA = 0x0000;
-  static const uint16_t T_SIZEPERPTR = 0x0001;
-  static const uint16_t T_DATAPTR = 0x0002;
-  static const uint16_t T_MANIFESTPTR = 0x0003;
+  /**
+   * Returns the expiry time associated with the payload of this Manifest.
+   *
+   * If the expiry time is not set, the Ptr will evaluate to 0 (i.e. operator !()).
+   */
+  Ptr<CCNxTime>   GetExpiryTime () const;
 
-  // name segments
-  static const uint16_t T_NAMESEG_NAME = 0x0001;
-  static const uint16_t T_NAMESEG_IPID = 0x0002;
-  static const uint16_t T_NAMESEG_CHUNK = 0x0010;
-  static const uint16_t T_NAMESEG_VERSION = 0x0013;
+  /**
+   * Returns the PayloadType associated with this Manifest.
+   *
+   * The default value of PayloadType is 0 (CCNxManifestPayloadType_Data)
+   */
+  CCNxManifestPayloadType GetPayloadType () const;
 
-  static const uint16_t T_NAMESEG_APP0 = 0x1000;
-  static const uint16_t T_NAMESEG_APP1 = 0x1001;
-  static const uint16_t T_NAMESEG_APP2 = 0x1002;
-  static const uint16_t T_NAMESEG_APP3 = 0x1003;
-  static const uint16_t T_NAMESEG_APP4 = 0x1004;
+  /**
+   * Determines if the given Manifest is equivalent to this Manifest.
+   *
+   * Two Manifests are equivalent if the tuples {name, payload, expiry time}
+   * are exactly equal.
+   */
+  bool Equals (const Ptr<CCNxManifest> other) const;
 
-  // Payload type
-  static const uint8_t T_PAYLOADTYPE_DATA = 0x00;
-  static const uint8_t T_PAYLOADTYPE_KEY = 0x01;
-  static const uint8_t T_PAYLOADTYPE_LINK = 0x02;
-  static const uint8_t T_PAYLOADTYPE_MANIFEST = 0x3;
+  /**
+   * Determines if the given Manifest is equivalent to this Manifest.
+   *
+   * Two Manifests are equivalent if the tuples {name, payload, expiry time}
+   * are exactly equal.
+   */
+  bool Equals (CCNxManifest const &other) const;
 
-  // Validation fields
-  static const uint16_t T_CRC32C = 0x0002;
-  static const uint16_t T_HMAC_SHA256 = 0x0003;
-  static const uint16_t T_RSA_SHA256 = 0x0006;
+  /**
+  * Inherited from CCNxMessage.
+  *
+  * Returns CCNxMessage::MessageType::ContentObject.
+  */
+  virtual enum MessageType GetMessageType (void) const;
 
-  static const uint16_t T_KEYID = 0x0009;
-  static const uint16_t T_PUBLICKEY = 0x000B;
-  static const uint16_t T_SIGTIME = 0x000F;
+  /**
+   * Outputs a string like this:
+   *
+   * { Manifest ccnx:/name=foo, payloadSize X, payloadType Y, expiryTime Z }
+   *
+   * Where X is the bytes of payload in the content object, Y is the payload type
+   * CCNxManifestPayloadType, and Z is the uint64_t value of the CCNxTime.
+   * If there is no Y or Z in the Manifest, then the value 0 is used
+   *
+   * @param [in] os ostream object
+   * @param [in] content CCNxManifest object
+   * @return ostream object
+   */
+  friend std::ostream &operator<< (std::ostream &os, CCNxManifest const &content);
+
+protected:
+  CCNxManifestPayloadType m_payloadType;
+  Ptr<CCNxTime>   m_expiryTime;
 };
+
 }
 }
-#endif //CCNS3SIM_CCNXSCHEMAV1_H
+
+#endif //CCNS3_CCNXMANIFEST_H

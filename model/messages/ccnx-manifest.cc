@@ -53,84 +53,95 @@
  * contact PARC at cipo@parc.com for more information or visit http://www.ccnx.org
  */
 
-#ifndef CCNS3SIM_CCNXSCHEMAV1_H
-#define CCNS3SIM_CCNXSCHEMAV1_H
+#include <ns3/log.h>
+#include "ccnx-manifest.h"
 
-#include <stdint.h>
+using namespace ns3;
+using namespace ns3::ccnx;
 
-namespace ns3 {
-namespace ccnx {
+NS_LOG_COMPONENT_DEFINE ("CCNxManifest");
+NS_OBJECT_ENSURE_REGISTERED (CCNxManifest);
 
-/**
- * @ingroup ccnx-packet
- *
- * This class defines the TLV Type values for the V1 schema.
- *
- * These values come from the ICNRG research group document irtf-icnrg-ccnx-messages-01.txt.
- */
-class CCNxSchemaV1
+TypeId
+CCNxManifest::GetTypeId (void)
 {
-public:
-  // hop-by-hop headers
-  static const uint16_t T_INT_LIFE = 0x0001;
-  static const uint16_t T_CACHE_TIME = 0x0002;
-  static const uint16_t T_MSG_HASH = 0x0003;
-
-  // top-level TLVs
-  static const uint16_t T_INTEREST = 0x0001;
-  static const uint16_t T_OBJECT = 0x0002;
-  static const uint16_t T_VALALG = 0x0003;
-  static const uint16_t T_VALSIG = 0x0004;
-  static const uint16_t T_MANIFEST = 0x0006;
-
-  // Message body
-  static const uint16_t T_NAME = 0x0000;
-  static const uint16_t T_PAYLOAD = 0x0001;
-  static const uint16_t T_KEYID_REST = 0x0002;
-  static const uint16_t T_HASH_REST = 0x0003;
-  static const uint16_t T_PAYLDTYPE = 0x0005;
-  static const uint16_t T_EXPIRY = 0x0006;
-  static const uint16_t T_HASHGROUP = 0x0007;
-  static const uint16_t T_BLOCKHASHGROUP = 0x0008;
-
-  // HashGroup body
-  static const uint16_t T_METADATA = 0x0000;
-  static const uint16_t T_SIZED_DATAPTR = 0x0001;
-  static const uint16_t T_SIZED_MANIFESTPTR = 0x0002;
-
-  // BlockHashGroup body
-  static const uint16_t T_METADATA = 0x0000;
-  static const uint16_t T_SIZEPERPTR = 0x0001;
-  static const uint16_t T_DATAPTR = 0x0002;
-  static const uint16_t T_MANIFESTPTR = 0x0003;
-
-  // name segments
-  static const uint16_t T_NAMESEG_NAME = 0x0001;
-  static const uint16_t T_NAMESEG_IPID = 0x0002;
-  static const uint16_t T_NAMESEG_CHUNK = 0x0010;
-  static const uint16_t T_NAMESEG_VERSION = 0x0013;
-
-  static const uint16_t T_NAMESEG_APP0 = 0x1000;
-  static const uint16_t T_NAMESEG_APP1 = 0x1001;
-  static const uint16_t T_NAMESEG_APP2 = 0x1002;
-  static const uint16_t T_NAMESEG_APP3 = 0x1003;
-  static const uint16_t T_NAMESEG_APP4 = 0x1004;
-
-  // Payload type
-  static const uint8_t T_PAYLOADTYPE_DATA = 0x00;
-  static const uint8_t T_PAYLOADTYPE_KEY = 0x01;
-  static const uint8_t T_PAYLOADTYPE_LINK = 0x02;
-  static const uint8_t T_PAYLOADTYPE_MANIFEST = 0x3;
-
-  // Validation fields
-  static const uint16_t T_CRC32C = 0x0002;
-  static const uint16_t T_HMAC_SHA256 = 0x0003;
-  static const uint16_t T_RSA_SHA256 = 0x0006;
-
-  static const uint16_t T_KEYID = 0x0009;
-  static const uint16_t T_PUBLICKEY = 0x000B;
-  static const uint16_t T_SIGTIME = 0x000F;
-};
+  static TypeId tid = TypeId ("ns3::ccnx::CCNxManifest")
+    .SetParent<CCNxMessage> ()
+    .SetGroupName ("CCNx");
+  return tid;
 }
+
+CCNxManifest::CCNxManifest ( Ptr<const CCNxName> name, Ptr<CCNxBuffer> payload, CCNxManifestPayloadType payloadType, Ptr<CCNxTime> expiryTime)
+  : CCNxMessage (name, payload), m_payloadType (payloadType), m_expiryTime (expiryTime)
+{
+  // empty
 }
-#endif //CCNS3SIM_CCNXSCHEMAV1_H
+
+CCNxManifest::CCNxManifest ( Ptr<const CCNxName> name, Ptr<CCNxBuffer> payload)
+  : CCNxMessage (name, payload), m_payloadType (CCNxManifestPayloadType_Data), m_expiryTime (0)
+{
+  // empty
+}
+
+CCNxManifest::CCNxManifest ( Ptr<const CCNxName> name)
+  : CCNxMessage (name), m_payloadType (CCNxManifestPayloadType_Data), m_expiryTime (0)
+{
+  // empty
+}
+
+Ptr<CCNxTime>
+CCNxManifest::GetExpiryTime () const
+{
+  return m_expiryTime;
+}
+
+CCNxManifestPayloadType
+CCNxManifest::GetPayloadType () const
+{
+  return m_payloadType;
+}
+
+bool
+CCNxManifest::Equals (const Ptr<CCNxManifest> other) const
+{
+  if (other)
+    {
+      return Equals (*other);
+    }
+  else
+    {
+      return false;
+    }
+}
+
+bool
+CCNxManifest::Equals (CCNxManifest const &other) const
+{
+  bool result = false;
+  if (m_payload->Equals (*other.m_payload)
+      && m_name->Equals (*other.m_name)
+      && m_expiryTime->Equals (*other.m_expiryTime)
+      && m_payloadType == other.m_payloadType)
+    {
+      result = true;
+    }
+
+  return result;
+}
+
+
+enum CCNxMessage::MessageType
+CCNxManifest::GetMessageType (void) const
+{
+  return CCNxMessage::Manifest;
+}
+
+std::ostream &
+ns3::ccnx::operator<< (std::ostream &os, CCNxManifest const &content)
+{
+  os << "{ Manifest " << *content.GetName ();
+  os << ", PayloadSize " << content.GetPayload ()->GetSize ();
+  os << ", payloadType " << content.GetPayloadType ();
+  os << ", expiryTime "  << content.GetExpiryTime ()->getTime () << " }";
+  return os;
+}

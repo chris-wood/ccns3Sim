@@ -53,10 +53,12 @@
  * contact PARC at cipo@parc.com for more information or visit http://www.ccnx.org
  */
 
-#ifndef CCNS3SIM_CCNXSCHEMAV1_H
-#define CCNS3SIM_CCNXSCHEMAV1_H
+#ifndef CCNS3SIM_CCNxManifest_H
+#define CCNS3SIM_CCNxManifest_H
 
-#include <stdint.h>
+#include "ns3/header.h"
+#include "ns3/ccnx-contentobject.h"
+#include "ns3/ccnx-codec-name.h"
 
 namespace ns3 {
 namespace ccnx {
@@ -64,73 +66,109 @@ namespace ccnx {
 /**
  * @ingroup ccnx-packet
  *
- * This class defines the TLV Type values for the V1 schema.
- *
- * These values come from the ICNRG research group document irtf-icnrg-ccnx-messages-01.txt.
+ * Codec for reading/writing a CCNxContentObject message
  */
-class CCNxSchemaV1
+class CCNxManifest : public Header
 {
 public:
-  // hop-by-hop headers
-  static const uint16_t T_INT_LIFE = 0x0001;
-  static const uint16_t T_CACHE_TIME = 0x0002;
-  static const uint16_t T_MSG_HASH = 0x0003;
+  /**
+   * Return the ns3::Object type
+   * @return The RTTI of this object
+   */
+  static TypeId GetTypeId (void);
 
-  // top-level TLVs
-  static const uint16_t T_INTEREST = 0x0001;
-  static const uint16_t T_OBJECT = 0x0002;
-  static const uint16_t T_VALALG = 0x0003;
-  static const uint16_t T_VALSIG = 0x0004;
-  static const uint16_t T_MANIFEST = 0x0006;
+  virtual TypeId GetInstanceTypeId (void) const;
 
-  // Message body
-  static const uint16_t T_NAME = 0x0000;
-  static const uint16_t T_PAYLOAD = 0x0001;
-  static const uint16_t T_KEYID_REST = 0x0002;
-  static const uint16_t T_HASH_REST = 0x0003;
-  static const uint16_t T_PAYLDTYPE = 0x0005;
-  static const uint16_t T_EXPIRY = 0x0006;
-  static const uint16_t T_HASHGROUP = 0x0007;
-  static const uint16_t T_BLOCKHASHGROUP = 0x0008;
+  // virtual from Header
+  /**
+   * Computes the byte length of the encoded TLV.  Does not do
+   * any encoding (it's const).
+   */
+  virtual uint32_t GetSerializedSize (void) const;
 
-  // HashGroup body
-  static const uint16_t T_METADATA = 0x0000;
-  static const uint16_t T_SIZED_DATAPTR = 0x0001;
-  static const uint16_t T_SIZED_MANIFESTPTR = 0x0002;
+  /**
+   * Serializes this object into the Buffer::Iterator.  it is the responsibility
+   * of the caller to ensure there is at least GetSerializedSize() bytes available.
+   *
+   * @param [out] output The buffer position to begin writing.
+   */
+  virtual void Serialize (Buffer::Iterator start) const;
 
-  // BlockHashGroup body
-  static const uint16_t T_METADATA = 0x0000;
-  static const uint16_t T_SIZEPERPTR = 0x0001;
-  static const uint16_t T_DATAPTR = 0x0002;
-  static const uint16_t T_MANIFESTPTR = 0x0003;
+  /**
+   * Reads from the Buffer::Iterator and creates an object instantiation of the buffer.
+   *
+   * The buffer should point to the beginning of the T_OBJECT TLV.
+   *
+   * @param [in] input The buffer to read from
+   * @return The number of bytes processed.
+   */
+  virtual uint32_t Deserialize (Buffer::Iterator start);
 
-  // name segments
-  static const uint16_t T_NAMESEG_NAME = 0x0001;
-  static const uint16_t T_NAMESEG_IPID = 0x0002;
-  static const uint16_t T_NAMESEG_CHUNK = 0x0010;
-  static const uint16_t T_NAMESEG_VERSION = 0x0013;
+  /**
+   * Display this codec's state to the provided output stream.
+   *
+   * @param [in] os The output stream to write to
+   */
+  virtual void Print (std::ostream &os) const;
 
-  static const uint16_t T_NAMESEG_APP0 = 0x1000;
-  static const uint16_t T_NAMESEG_APP1 = 0x1001;
-  static const uint16_t T_NAMESEG_APP2 = 0x1002;
-  static const uint16_t T_NAMESEG_APP3 = 0x1003;
-  static const uint16_t T_NAMESEG_APP4 = 0x1004;
+  // subclass
+  CCNxManifest ();
 
-  // Payload type
-  static const uint8_t T_PAYLOADTYPE_DATA = 0x00;
-  static const uint8_t T_PAYLOADTYPE_KEY = 0x01;
-  static const uint8_t T_PAYLOADTYPE_LINK = 0x02;
-  static const uint8_t T_PAYLOADTYPE_MANIFEST = 0x3;
+  virtual ~CCNxManifest ();
 
-  // Validation fields
-  static const uint16_t T_CRC32C = 0x0002;
-  static const uint16_t T_HMAC_SHA256 = 0x0003;
-  static const uint16_t T_RSA_SHA256 = 0x0006;
+  /**
+   * Gets the Content Object's pointer.  Could be from Deserialize() or from
+   * SetHeader().
+   */
+  Ptr<CCNxContentObject> GetHeader () const;
 
-  static const uint16_t T_KEYID = 0x0009;
-  static const uint16_t T_PUBLICKEY = 0x000B;
-  static const uint16_t T_SIGTIME = 0x000F;
+  /**
+   * Sets the Content Object to the given value.  Used when serializing.
+   */
+  void SetHeader (Ptr<CCNxContentObject> content);
+
+  /**
+   * Maps the enum payload type to the schema value.
+   */
+  static uint8_t SerializePayloadTypeToSchemaValue (CCNxContentObjectPayloadType type);
+
+  /**
+   * Maps the schema value to the enum payload type.
+   */
+  static CCNxContentObjectPayloadType DeserializeSchemaValueToPayloadType (uint8_t type);
+
+private:
+  /**
+   * The Content Object to serialize (from SetHeader) or the Content Object we got from
+   * Deserialize().
+   */
+  Ptr<CCNxContentObject> m_content;
+  CCNxCodecName m_nameCodec;
+
+  /**
+   * The start iterator points to the T_NAME Value.  It will be rewinded 4
+   * bytes and passed to m_nameCodec for processing.  Side effect is that m_nameCodec
+   * will be updated with the Content Object's name.
+   */
+  Ptr<const CCNxName>  DeserializeName (Buffer::Iterator &start, uint16_t length);
+
+  /**
+   * start points to the T_PAYLDTYPE Value.  Reads 1 byte.
+   */
+  CCNxContentObjectPayloadType DeserializePayloadType (Buffer::Iterator &start, uint16_t length);
+
+  /**
+   * start points to the T_EXPIRY Value.  Reads 8 bytes of U64 in network
+   * byte order and returns it in host order.
+   */
+  Ptr<CCNxTime> DeserializeExpiryTime (Buffer::Iterator &start, uint16_t length);
+
+  /**
+   * start points to the T_PAYLOAD Value.  Reads the whole payload.
+   */
+  Ptr<CCNxBuffer> DeserializePayload (Buffer::Iterator &start, uint16_t length);
 };
 }
 }
-#endif //CCNS3SIM_CCNXSCHEMAV1_H
+
+#endif //CCNS3SIM_CCNxManifest_H

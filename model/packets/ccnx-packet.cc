@@ -187,6 +187,13 @@ CCNxPacket::ComputePacketSize () const
       codec.SetHeader (content);
       length += codec.GetSerializedSize ();
     }
+  else if (messageType == CCNxMessage::Manifest)
+    {
+      Ptr<CCNxManifest> manifest = DynamicCast<CCNxManifest, CCNxMessage> (m_message);
+      CCNxCodecContentObject codec;
+      codec.SetHeader (manifest);
+      length += codec.GetSerializedSize ();
+    }
   else
     {
       NS_ASSERT_MSG (false, "Unsupported m_message run time type " << messageType);

@@ -67,6 +67,7 @@
 #include "ns3/ccnx-codec-fixedheader.h"
 #include "ns3/ccnx-codec-interest.h"
 #include "ns3/ccnx-codec-contentobject.h"
+#include "ns3/ccnx-codec-manifest.h"
 
 namespace ns3 {
 namespace ccnx {
